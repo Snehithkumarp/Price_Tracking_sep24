@@ -124,9 +124,13 @@ class TrackedProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TrackedProduct
-        fields = ["id", "product", "product_id", "nickname", "created_at", "threshold"]
+        fields = ["id", "product", "product_id", "nickname", "created_at", "threshold", "active", "repeat_alerts"]
         # read_only_fields = ["id", "product", "created_at"]
         read_only_fields = ['user']
+
+    product_id = serializers.PrimaryKeyRelatedField(
+        source="product", queryset=Product.objects.all(), write_only=True
+    )
 
     def create(self, validated_data):
         """

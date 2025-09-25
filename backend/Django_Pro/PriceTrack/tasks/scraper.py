@@ -222,12 +222,14 @@
 # =============================================
 # 🔹 Price Tracking Scraper (Amazon + Flipkart)
 # =============================================
-
+import re
+import time
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote
-import re
-import time
+
+from django.core.management.base import BaseCommand
+from PriceTrack.models import Product  # Adjust if your app name is different
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -257,7 +259,7 @@ def scrape_amazon_search(query, max_results=5):
         if title_tag and price_tag and link_tag:
             results.append({
                 "name": title_tag.get_text(strip=True),
-                "price": price_tag.get_text(strip=True).replace(",", ""),
+                "price": re.sub(r"[^\d.]", "", price_tag.get_text(strip=True).replace(",", "")),
                 "image": image_tag["src"] if image_tag else "",
                 "url": "https://www.amazon.in" + link_tag["href"]
             })
@@ -307,10 +309,16 @@ def clean_amazon_url(url: str) -> str:
     return url
 
 
+# def clean_flipkart_url(url: str) -> str:
+#     if "dl.flipkart.com" in url:
+#         return url.split("?")[0]
+#     if "/p/" in url:
+#         return url.split("?")[0]
+#     return url
+
+#update 24 sep
 def clean_flipkart_url(url: str) -> str:
-    if "dl.flipkart.com" in url:
-        return url.split("?")[0]
-    if "/p/" in url:
+    if "dl.flipkart.com" in url or "/p/" in url:
         return url.split("?")[0]
     return url
 
@@ -321,7 +329,7 @@ def scrape_product(url: str) -> dict:
     elif "flipkart" in url:
         return scrape_flipkart_product(url)
     else:
-        return {"error": "Unsupported site"}
+        return {"name": None, "price": None, "image": None, "error": "Unsupported site"}
 
 
 # ---------- AMAZON PRODUCT ----------
@@ -330,26 +338,26 @@ def scrape_amazon_product(url: str) -> dict:
         res = requests.get(url, headers=HEADERS, timeout=15)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        name = soup.select_one("#productTitle")
+        # Title fallbacks
+        name = (
+            soup.select_one("#productTitle")
+            or soup.select_one("title")
+            or soup.select_one("span.a-size-large")
+            or soup.select_one("h1 span")
+        )
         name = name.get_text(strip=True) if name else None
 
-        price = None
-        for selector in ["#priceblock_ourprice", "#priceblock_dealprice", ".a-price .a-offscreen"]:
-            el = soup.select_one(selector)
-            if el:
-                price = el.get_text(strip=True)
-                break
+        price_el = soup.select_one("#priceblock_ourprice") or soup.select_one("#priceblock_dealprice") or soup.select_one(".a-price .a-offscreen")
+        price = re.sub(r"[^\d.]", "", price_el.get_text(strip=True)) if price_el else None
 
-        image = None
+        # Image
         img_el = soup.select_one("#landingImage, #imgTagWrapperId img")
-        if img_el:
-            image = img_el.get("src")
+        image = img_el.get("src") if img_el else ""
 
         return {"name": name, "price": price, "image": image}
-
     except Exception as e:
         print("❌ Amazon scraper error:", e)
-        return {}
+        return {"name": None, "price": None, "image": None}
 
 
 # ---------- FLIPKART PRODUCT ----------
@@ -358,32 +366,52 @@ def scrape_flipkart_product(url: str) -> dict:
         res = requests.get(url, headers=HEADERS, timeout=15)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        name = soup.select_one("span.B_NuCI") or soup.select_one("span.VU-ZEz")
+        # Title fallbacks
+        name = (
+            soup.select_one("span.B_NuCI") or   # old selector
+            soup.select_one("span.VU-ZEz") or   # new selector (2024+)
+            soup.select_one("h1") or            # fallback to any h1
+            soup.select_one("title")            # fallback to <title>
+        )
         name = name.get_text(strip=True) if name else None
 
-        price_el = soup.select_one("div._30jeq3._16Jk6d") or soup.select_one("div.Nx9bqj.CxhGGd")
-        price = price_el.get_text(strip=True) if price_el else None
-
-        img_el = (
-            soup.select_one("img._396cs4._2amPTt._3qGmMb")
-            or soup.select_one("img.DByuf4")
-            or soup.select_one("img._53J4C-")
-            or soup.select_one("img.utBuJY")
-            or soup.select_one("img")
+        # Price fallbacks
+        price_el = (
+            soup.select_one("div._30jeq3._16Jk6d") or 
+            soup.select_one("div.Nx9bqj.CxhGGd") or 
+            soup.select_one("div._25b18c ._30jeq3")  # fallback for offers
         )
-        image = None
-        if img_el:
-            image = img_el.get("src") or img_el.get("data-src") or ""
+        price = re.sub(r"[^\d]", "", price_el.get_text(strip=True)) if price_el else None
 
-        if name and price:
-            return {"name": name, "price": price, "image": image}
+        # Image fallback
+        img_el = (
+            soup.select_one("img._396cs4") or
+            soup.select_one("img.DByuf4") or
+            soup.select_one("img._53J4C-") or
+            soup.select_one("img")   # last fallback
+        )
+        image = img_el.get("src") if img_el else ""
 
-        print("⚠️ Flipkart requests failed, retrying with Selenium...")
-        return scrape_flipkart_selenium(url)
+        return {"name": name, "price": price, "image": image}
 
     except Exception as e:
-        print("❌ Flipkart scraper error:", e)
-        return {}
+            print("❌ Flipkart scraper error:", e)
+            return {"name": None, "price": None, "image": None}
+    
+
+    
+    
+
+    #     if name and price:
+    #         return {"name": name, "price": price, "image": image}
+
+    #     # Fallback: Selenium
+    #     print("⚠️ Flipkart requests failed, retrying with Selenium...")
+    #     return scrape_flipkart_selenium(url)
+
+    # except Exception as e:
+    #     print("❌ Flipkart scraper error:", e)
+    #     return {"name": None, "price": None, "image": None}
 
 
 def scrape_flipkart_selenium(url: str) -> dict:
@@ -405,13 +433,17 @@ def scrape_flipkart_selenium(url: str) -> dict:
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
+    # Title
     name = soup.select_one("span.VU-ZEz") or soup.select_one("span.B_NuCI")
+    # Price
     price = soup.select_one("div.Nx9bqj.CxhGGd") or soup.select_one("div._30jeq3._16Jk6d")
-    image = (
+    # Image
+    image_el = (
         soup.select_one("img.DByuf4")
         or soup.select_one("img._53J4C-")
         or soup.select_one("img._396cs4")
     )
+    image = image_el.get("src") if image_el else ""
 
     return {
         "name": name.get_text(strip=True) if name else None,

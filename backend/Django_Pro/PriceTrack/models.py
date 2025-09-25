@@ -28,9 +28,9 @@ class Product(models.Model):
     Represents a product to track prices.
     """
     title = models.CharField(max_length=255)
-    url = models.URLField(max_length=1024, null=True, blank=True)      # Optional URL
+    # url = models.URLField(max_length=1024, null=True, blank=True)      # Optional URL
     sku = models.CharField(max_length=255, null=True, blank=True, db_index=True)  # Product identifier
-    product_url = models.URLField(max_length=1024, null=True, blank=True)         # Product page URL
+    product_url = models.URLField(max_length=1024, unique=True, null=True, blank=True)         # Product page URL
     affiliate_url = models.URLField(max_length=1024, blank=True, null=True)           # Optional affiliate link
     image_url = models.URLField(max_length=1024, null=True, blank=True) # Product image
     currency = models.CharField(max_length=12, default="INR")        # Currency code
@@ -81,6 +81,8 @@ class TrackedProduct(models.Model):
     nickname = models.CharField(max_length=150, blank=True, null=True)  # Optional name for product
     created_at = models.DateTimeField(auto_now_add=True)
     threshold = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) #, default=0, null=False
+    active = models.BooleanField(default=True)  # whether alert is still active
+    repeat_alerts = models.BooleanField(default=False)
     # last_alert_sent = models.DateTimeField(null=True, blank=True)  # NEW
     
     class Meta:
@@ -88,4 +90,4 @@ class TrackedProduct(models.Model):
         ordering = ("-created_at",)            # Latest tracked products first
 
     def __str__(self):
-        return f"{self.user} -> {self.product.title} @ {self.threshold}"
+        return f"{self.user.username} -> {self.product.title} @ {self.threshold}"

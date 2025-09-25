@@ -31,6 +31,7 @@ export default function ProductDetailPage() {
   const [alertPrice, setAlertPrice] = useState("");
   const [message, setMessage] = useState("");
   const [alerts, setAlerts] = useState([]);
+  const [repeat, setRepeat] = useState(false); // 🔹 new for repeat alerts
 
   const token = localStorage.getItem("token");
 
@@ -189,14 +190,19 @@ export default function ProductDetailPage() {
 
     try {
       // -----------------------------
-      // Step 1: Create TrackedProduct
+      // Step 1: Create or update tracked product with threshold + repeat option
       // -----------------------------
       console.log("req 1");
 
       const req1 = await apiFetch(
         `${API_BASE}/api/tracked/`,
-        "POST",
-        { product_id: product.id, threshold: Number(alertPrice) },
+        "POST", // let backend handle create_or_update
+        {
+          product_id: product.id,
+          threshold: Number(alertPrice),
+          active: true,
+          repeat_alerts: repeat, // 👈 checkbox value
+        },
         token
       );
       console.log("Tracked product response:", req1);
@@ -317,6 +323,18 @@ export default function ProductDetailPage() {
                 required
                 className="flex-1 rounded border px-3 py-2 text-sm"
               />
+
+              {/* 🔹 Repeat Alerts Checkbox */}
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={repeat}
+                  onChange={(e) => setRepeat(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                Send multiple alerts (repeat)
+              </label>
+
               <button
                 type="submit"
                 className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
