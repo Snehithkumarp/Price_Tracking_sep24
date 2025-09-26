@@ -92,7 +92,7 @@ class Command(BaseCommand):
                     product.current_price = price
                     product.save()
 
-            # --- Add Price History entry ---
+            # Save price history
             PriceHistory.objects.create(product=product, price=price)
 
             # --- Output to console ---

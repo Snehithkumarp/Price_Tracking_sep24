@@ -1,16 +1,21 @@
+# app/management/commands/send_test_email.py
+from django.core.management.base import BaseCommand
 from django.core.mail import send_mail
-from django.conf import settings
 
-def send_price_alert(user_email, product_title, current_price, product_url):
-    subject = f"Price Drop Alert for {product_title}!"
-    message = (
-        f"Good news! 🎉\n\n"
-        f"The product '{product_title}' has dropped in price.\n"
-        f"Current Price: ₹{current_price}\n"
-        f"Check it here: {product_url}\n\n"
-        f"— Your Price Tracker Bot 🤖"
-    )
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user_email])
+class Command(BaseCommand):
+    help = "Send a test email"
+
+    def handle(self, *args, **kwargs):
+        send_mail(
+            subject="🔔 Test Email from Django",
+            message="If you see this, email is working!",
+            from_email=None,  # uses DEFAULT_FROM_EMAIL
+            recipient_list=["snehith.pottluru1212@gmail.com"],
+            fail_silently=False,
+        )
+        self.stdout.write(self.style.SUCCESS("✅ Test email sent!"))
+
+
 #----------------------------------------------------------------------------
 
 
@@ -47,5 +52,3 @@ def send_price_alert(user_email, product_title, current_price, product_url):
 #         recipient_list=["youraddress@example.com"],  # change to your test email
 #         fail_silently=False,
 #     )
-
-
