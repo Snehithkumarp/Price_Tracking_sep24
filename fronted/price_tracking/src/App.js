@@ -7,15 +7,25 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // 🌐 Components
 // ==============================
 import Navbar from "./components/Navbar";
+import AdminLayout from "./components/AdminLayout";
+import { RequireAdmin } from "./components/RequireAdmin";
 
 // ==============================
-// 📄 Pages
+// 📄 User Pages
 // ==============================
-import HomePage from "./pages/HomePage";
-import ProductDetailPage from "./pages/ProductDetailPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import MyTrackedProductsPage from "./pages/MyTrackedProducts";
+import HomePage from "./pages/Users/HomePage";
+import ProductDetailPage from "./pages/Users/ProductDetailPage";
+import LoginPage from "./pages/Users/LoginPage";
+import SignupPage from "./pages/Users/SignupPage";
+import MyTrackedProductsPage from "./pages/Users/MyTrackedProducts";
+
+// ==============================
+// 📄 Admin Pages
+// ==============================
+import Dashboard from "./pages/Admin/Dashboard";
+import ProductsPage from "./pages/Admin/Products";
+import TrackedProductsPage from "./pages/Admin/TrackedProducts";
+import PriceHistory from "./pages/Admin/PriceHistory";
 
 // ==============================
 // 🔐 Auth Context
@@ -24,34 +34,42 @@ import { AuthProvider } from "./context/AuthContext";
 
 // ==============================
 // 🏗 AppShell Component
-//    Main layout of your app:
-//    - Navbar
-//    - Main content rendered by React Router
-//    - Footer
 // ==============================
 function AppShell() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Navbar: Shows links + login/logout info */}
+      {/* Navbar */}
       <Navbar />
 
       {/* Main content container */}
       <main className="flex-1">
         <Routes>
-          {/* 🏠 Home page with search */}
+          {/* -------------------- */}
+          {/* User-facing routes   */}
+          {/* -------------------- */}
           <Route path="/" element={<HomePage />} />
-
-          {/* 📦 Product details page */}
           <Route path="/product/:id" element={<ProductDetailPage />} />
-
-          {/* 🔑 Login page */}
           <Route path="/login" element={<LoginPage />} />
-
-          {/* ✍️ Signup page */}
           <Route path="/signup" element={<SignupPage />} />
-
-          {/* 📌 My tracked products */}
           <Route path="/my-tracked" element={<MyTrackedProductsPage />} />
+
+          {/* -------------------- */}
+          {/* Admin routes (protected) */}
+          {/* -------------------- */}
+          <Route
+            path="/admin/*"
+            element={
+              <RequireAdmin>
+                <AdminLayout />
+              </RequireAdmin>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="products" element={<ProductsPage />} />
+            <Route path="tracked" element={<TrackedProductsPage />} />
+            <Route path="price-history/:productId?" element={<PriceHistory />} />
+          </Route>
         </Routes>
       </main>
 
@@ -67,8 +85,6 @@ function AppShell() {
 
 // ==============================
 // 🌟 Main App Component
-//    Wraps everything in AuthProvider
-//    and BrowserRouter for routing
 // ==============================
 export default function App() {
   return (

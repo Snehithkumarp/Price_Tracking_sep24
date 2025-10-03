@@ -5,16 +5,16 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { apiFetch } from "../utils/fetcher";
-import { API } from "../utils/api";
+import { apiFetch } from "../../utils/fetcher";
+import { API } from "../../utils/api";
 
 export default function SignupPage() {
   const nav = useNavigate(); // react-router navigation
-  const [username, setUsername] = useState("");  // backend expects username
-  const [email, setEmail] = useState("");       // email input
+  const [username, setUsername] = useState(""); // backend expects username
+  const [email, setEmail] = useState(""); // email input
   const [password, setPassword] = useState(""); // password input
   const [loading, setLoading] = useState(false); // loading state during API call
-  const [error, setError] = useState("");        // error message
+  const [error, setError] = useState(""); // error message
 
   // ==============================
   // 🔹 Handle signup form submission
@@ -25,35 +25,66 @@ export default function SignupPage() {
     setError("");
 
     const data = { username, email, password }; // prepare payload
-  //   try {
-  //     // Call backend signup API
-  //     await apiFetch(API.signup(), "POST", data);
-  //     alert("✅ Signup successful! Please log in.");
-  //     nav("/login"); // redirect to login page
-  //   } catch (err) {
-  //     console.error("Signup failed:", err);
-  //     setError(err.response?.data?.detail || "Signup failed"); // show error from backend
-  //   } finally {
-  //     setLoading(false); // stop loading
-  //   }
-  // };
-// inside SignupPage, update catch block:
+    //   try {
+    //     // Call backend signup API
+    //     await apiFetch(API.signup(), "POST", data);
+    //     alert("✅ Signup successful! Please log in.");
+    //     nav("/login"); // redirect to login page
+    //   } catch (err) {
+    //     console.error("Signup failed:", err);
+    //     setError(err.response?.data?.detail || "Signup failed"); // show error from backend
+    //   } finally {
+    //     setLoading(false); // stop loading
+    //   }
+    // };
+    // inside SignupPage, update catch block:
     try {
       await apiFetch(API.signup(), "POST", data);
       alert("✅ Signup successful! Please log in.");
       nav("/login");
     } catch (err) {
       console.error("Signup failed:", err);
-      // prefer backend message (err.data.detail or err.data), fall back to err.message
-      const backendMsg =
-        (err && err.data && (err.data.detail || err.data.message || JSON.stringify(err.data))) ||
-        err.message ||
-        "Signup failed";
+
+      let backendMsg = "Signup failed";
+
+      if (err?.data) {
+        if (typeof err.data === "object" && !Array.isArray(err.data)) {
+          backendMsg = Object.entries(err.data)
+            .map(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                return `${field}: ${messages.join(", ")}`;
+              }
+              return `${field}: ${messages}`;
+            })
+            .join("\n \n"); // 👈 puts each error on a new line
+        } else if (err.data.detail) {
+          backendMsg = err.data.detail;
+        } else {
+          backendMsg = JSON.stringify(err.data);
+        }
+      } else if (err.message) {
+        backendMsg = err.message;
+      }
+
       setError(backendMsg);
     } finally {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Signup</h1>
+        </div>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Signup...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ==============================
   // 🔹 Render Signup Form
@@ -70,7 +101,10 @@ export default function SignupPage() {
       )}
 
       {/* Signup form */}
-      <form onSubmit={handleSignup} className="rounded-2xl border bg-white p-4 shadow-sm">
+      <form
+        onSubmit={handleSignup}
+        className="rounded-2xl border bg-white p-4 shadow-sm"
+      >
         <label className="block text-sm font-medium">Username</label>
         <input
           type="text"

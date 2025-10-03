@@ -14,13 +14,21 @@ export const API_BASE = "http://127.0.0.1:8000";
 // API Endpoints Helper
 // -------------------------------
 export const API = {
+
+  products: () => `${API_BASE}/api/products/`,
+  trackedProducts: () => `${API_BASE}/api/tracked-products/`,
+  adminTrackedProducts: () => `${API_BASE}/api/tracked-products/all/`,
+  users: () => `${API_BASE}/api/users/`,
+  adminPriceHistory: () => `${API_BASE}/api/price-history/`,
   // ---------- Auth ----------
  // signup: () => `${API_BASE}/api/auth/signup/`, // Register a new user
   signup: () => `${API_BASE}/api/auth/signup/`,
 
   login: () => `${API_BASE}/api/auth/login/`,   // Login user and return JWT token
 
+  dashboardStats: () => `${API_BASE}/dashboard/stats/`,
   // ---------- Product ----------
+  recentlyDropped: () => `${API_BASE}/api/products/recently-dropped/`,
   search: (q) => `${API_BASE}/api/products/?search=${encodeURIComponent(q)}`, 
   // Search products by query `q`, properly URL-encoded
 
@@ -40,3 +48,32 @@ export const API = {
   },
 };
 
+// src/utils/api.js
+
+export async function apiFetch(url, method = "GET", body = null, options = {}) {
+  const token = localStorage.getItem("token");
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : null,
+  });
+
+  if (!response.ok) {
+    let errorText = "API request failed";
+    try {
+      const errorData = await response.json();
+      errorText = errorData.detail || JSON.stringify(errorData);
+    } catch (err) {
+      // fallback to default error text
+    }
+    throw new Error(errorText);
+  }
+
+  return await response.json();
+}

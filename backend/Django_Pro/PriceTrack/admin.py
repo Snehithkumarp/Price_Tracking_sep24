@@ -19,9 +19,6 @@ class PriceHistoryInline(admin.TabularInline):
     extra = 0
     readonly_fields = ("price", "date")  # don't allow editing
     ordering = ("-date",)
-
-
-
 # ---------------------------
 # Product Admin
 # ---------------------------
@@ -42,7 +39,7 @@ class ProductAdmin(admin.ModelAdmin):
     def product_link(self, obj):
         if obj.product_url:
             return format_html('<a href="{}" target="_blank">{}</a>', obj.product_url, obj.title)
-        return obj.title
+        return str(obj.title)
     product_link.short_description = "Product Link"
 
     # Delete products with no URL
@@ -59,12 +56,13 @@ class ProductAdmin(admin.ModelAdmin):
         seen = set()
         duplicates = []
         for product in queryset.order_by("id"):
-            if product.product_url in seen:
+            if product.product_url and product.product_url in seen:
                 duplicates.append(product.id)
             else:
-                seen.add(product.product_url)
-        Product.objects.filter(id__in=duplicates).delete()
-        self.message_user(request, f"{len(duplicates)} duplicate products removed.")
+                if product.product_url:
+                    seen.add(product.product_url)
+            Product.objects.filter(id__in=duplicates).delete()
+            self.message_user(request, f"{len(duplicates)} duplicate products removed.")
 
 
 

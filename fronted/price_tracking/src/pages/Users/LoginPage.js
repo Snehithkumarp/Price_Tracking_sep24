@@ -5,9 +5,9 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { API } from "../utils/api";
-import { apiFetch } from "../utils/fetcher";
-import { useAuth } from "../context/AuthContext";
+import { API } from "../../utils/api";
+import { apiFetch } from "../../utils/fetcher";
+import { useAuth } from "../../context/AuthContext";
 
 export default function LoginPage() {
   const nav = useNavigate(); // used for programmatic navigation after login
@@ -23,7 +23,7 @@ export default function LoginPage() {
   // ==============================
   // 🔹 Login handler
   // ==============================
-  const handleLogin = async (e) => {
+  const handleLogin1 = async (e) => {
     e.preventDefault(); // prevent form default submission
     setLoading(true);
     setError("");
@@ -35,12 +35,40 @@ export default function LoginPage() {
       // alert("✅ Login successful!");
       nav("/"); // redirect user to homepage
     } catch (err) {
-      console.error("Login failed:", err);
-      setError(err.message || "Login failed");
+        console.error("Login failed:", JSON.stringify(err, null, 2));
+        setError(err.detail || err.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleLogin = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+
+  try {
+    const loginResponse = await login(username, password);
+    const user = loginResponse.user;
+    const isAdmin = user.is_admin;
+
+    // Redirect based on role
+    if (isAdmin) {
+      nav("/admin/dashboard"); // admin route
+    } else {
+      nav("/"); // regular user route
+    }
+
+  } catch (err) {
+    console.error("Login failed:", err);
+    setError(err.message || "Login failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
   // ==============================
   // 🔹 Render login form

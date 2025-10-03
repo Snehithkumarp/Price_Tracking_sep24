@@ -66,6 +66,10 @@ export function AuthProvider({ children }) {
     console.log("userData in login ", userData);
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
+
+    // ✅ Set is_admin flag
+    localStorage.setItem("is_admin", userData.is_superuser ? "true" : "false");
+
     return res;
   } catch (err) {
     // rethrow so login page can show err.data
@@ -104,6 +108,7 @@ export function AuthProvider({ children }) {
     () => ({ token, user, login, logout, setUser }),
     [token, user]
   );
+  
 
   // ---------------------------
   // Provide Context to Children

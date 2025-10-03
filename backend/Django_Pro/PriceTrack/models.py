@@ -6,7 +6,6 @@ from django.conf import settings
 # Custom User
 # ---------------------------
 # Use the custom User model for authentication
-User = settings.AUTH_USER_MODEL
 
 class User(AbstractUser):
     """
@@ -38,7 +37,7 @@ class Product(models.Model):
     last_checked = models.DateTimeField(auto_now=True)               # Auto-update on every save
 
     def __str__(self):
-        return f"{self.title} ({self.sku})"
+        return f"{self.title} ({self.sku or 'no-sku'})"
 
 
 # ---------------------------
@@ -50,7 +49,13 @@ class PriceHistory(models.Model):
     """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="history")
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateTimeField(auto_now_add=True)  # Timestamp when the price was recorded
+    date = models.DateTimeField(auto_now_add=True)  # auto_now_add=True - cmd for graph / Timestamp when the price was recorded
+
+    def __str__(self):
+        return f"{self.product} - {self.price} at {self.date}"
+
+    class Meta:
+        ordering = ["-date"]
 
 
 # ---------------------------
@@ -76,12 +81,13 @@ class TrackedProduct(models.Model):
     """
     Tracks which products a user is monitoring.
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tracked_products")
+    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="tracked_products")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="tracked_by")
     nickname = models.CharField(max_length=150, blank=True, null=True)  # Optional name for product
     created_at = models.DateTimeField(auto_now_add=True)
     threshold = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True) #, default=0, null=False
     active = models.BooleanField(default=True)  # whether alert is still active
+    alert_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=None)
     repeat_alerts = models.BooleanField(default=False)
     # last_alert_sent = models.DateTimeField(null=True, blank=True)  # NEW
     
@@ -90,4 +96,4 @@ class TrackedProduct(models.Model):
         ordering = ("-created_at",)            # Latest tracked products first
 
     def __str__(self):
-        return f"{self.user.username} -> {self.product.title} @ {self.threshold}"
+        return f"{self.user.username} -> {self.product.title} @ {self.threshold or 'no-threshold'}"

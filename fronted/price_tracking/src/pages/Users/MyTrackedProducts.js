@@ -5,9 +5,9 @@
 // Users can remove tracked products or set price alerts.
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext"; // custom auth hook
-import { apiFetch } from "../utils/fetcher"; // wrapper for API calls
-import { API_BASE } from "../utils/api"; // base URL of backend API
+import { useAuth } from "../../context/AuthContext"; // custom auth hook
+import { apiFetch } from "../../utils/fetcher"; // wrapper for API calls
+import { API_BASE } from "../../utils/api"; // base URL of backend API
 
 export default function MyTrackedProductsPage() {
   const auth = useAuth(); // get current user's token & info
@@ -145,6 +145,20 @@ export default function MyTrackedProductsPage() {
     return <div className="p-6">Please log in to view your tracked products.</div>;
   }
 
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">My Tracked</h1>
+        </div>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading Tracked products...</p>
+        </div>
+      </div>
+    );
+  }
+
   // ==============================
   // 🔹 Render tracked products list
   // ==============================
@@ -171,12 +185,22 @@ export default function MyTrackedProductsPage() {
               />
 
               {/* Product info */}
-              <div className="flex-1">
+              {/* <div className="flex-1">
                 <div className="font-semibold">{t?.nickname || t?.product?.title}</div>
                 <div className="text-sm text-gray-600">
                   Current: {t.product?.currency}{t.product?.current_price}
                 </div>
+              </div> */}
+              <div className="flex-1">
+                <div className="font-semibold">{t?.nickname || t?.product?.title}</div>
+                <div className="text-sm text-gray-600 font-bold text-green-600">
+                  Current: {t.product?.currency}{t.product?.current_price}
+                </div>
+                <div className="text-sm text-gray-600 font-bold text-red-600">
+                  Alert: {t.threshold ? `${t.product?.currency}${t.threshold}` : "—"} {/* Show dash if no alert is set */}
+                </div>
               </div>
+
 
               {/* Action buttons */}
               <div className="flex flex-col gap-2">

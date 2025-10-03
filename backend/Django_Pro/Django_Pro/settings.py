@@ -179,8 +179,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ""          # Replace with your Gmail
-EMAIL_HOST_PASSWORD = ""     # App password
+EMAIL_HOST_USER = "arya.pspk@gmail.com"          # Replace with your Gmail
+EMAIL_HOST_PASSWORD = "szxo czev vkwd mhfy"     # App password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # -------------------------------
@@ -191,3 +191,13 @@ LOGGING = {
     'handlers': {'console': {'class': 'logging.StreamHandler'}},
     'root': {'handlers': ['console'], 'level': 'DEBUG'},
 }
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+

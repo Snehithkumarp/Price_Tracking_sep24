@@ -14,8 +14,8 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { API, API_BASE } from "../utils/api";
-import { apiFetch } from "../utils/fetcher";
+import { API, API_BASE } from "../../utils/api";
+import { apiFetch } from "../../utils/fetcher";
 
 export default function ProductDetailPage() {
   // 🏷 Get product ID from URL params
@@ -97,8 +97,11 @@ export default function ProductDetailPage() {
         setHistory(
           p.history?.map((item) => ({
             ...item,
-            date: new Date(item.date).toLocaleDateString(),
+            // date: new Date(item.date).toLocaleDateString(),
+            date: item.date,
+            price: Number(item.price),
           }))
+          .sort((a, b) => new Date(a.date) - new Date(b.date)) // 🔹 sort old → new
         );
         setLoading(false);
         setProduct(p);
@@ -158,7 +161,7 @@ export default function ProductDetailPage() {
 
       // Refresh alerts after setting
       // const userAlerts = await apiFetch(API.alerts.list(), token, "GET");
-      const userAlerts = await apiFetch(API.alerts.list(), "GET", null, token);
+      const userAlerts = await apiFetch(API.alerts.list(), "GET");
       console.log("User Alerts  ==> ", userAlerts);
 
       setAlerts(userAlerts.filter((a) => a.product === product.id));
@@ -176,11 +179,11 @@ export default function ProductDetailPage() {
       setMessage(msg);
     } finally {
       // Clear message after 4s
-      setTimeout(() => setMessage(""), 10000);
+      setTimeout(() => setMessage(""), 9999);
     }
   };
 
-  const handleSetAlert = async (e) => {
+  const handleSetAlert2 = async (e) => {
     e.preventDefault();
 
     if (!token) {
@@ -234,6 +237,15 @@ export default function ProductDetailPage() {
         token
       );
       console.log("User tracked products ==> ", userTracked);
+      const productAlerts = userTracked
+        .filter((t) => t.product.id === product.id)
+        .map((t) => ({
+          id: t.id,
+          threshold: t.threshold,
+          active: t.active,
+        }));
+      setAlerts(productAlerts);
+      
       // setTracked(userTracked);
     } catch (err) {
       console.log("Error setting alert ==> ", err);
@@ -244,9 +256,78 @@ export default function ProductDetailPage() {
         "❌ Failed to set alert.";
       setMessage(msg);
     } finally {
-      setTimeout(() => setMessage(""), 10000);
+      setTimeout(() => setMessage(""), 9999);
     }
   };
+
+  const handleSetAlert = async (e) => {
+  e.preventDefault();
+  if (!token) {
+    setMessage("❌ You must be logged in to set alerts.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/tracked/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        product_id: product.id,
+        threshold: Number(alertPrice),
+        active: true,
+        repeat_alerts: repeat,
+      }),
+    });
+
+    const data = await res.json(); // parse JSON even if error
+    if (!res.ok) {
+      // Display backend error
+      setMessage(data.detail || "❌ Failed to set alert.");
+      return;
+    }
+
+    const trackedId = data.id;
+
+    // Set alert on tracked product
+    const alertRes = await fetch(`${API_BASE}/api/tracked/${trackedId}/set-alert/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ threshold: Number(alertPrice) }),
+    });
+
+    const alertData = await alertRes.json();
+    if (!alertRes.ok) {
+      setMessage(alertData.detail || "❌ Failed to set alert.");
+      return;
+    }
+
+    setMessage("✅ Price alert set successfully!");
+    setAlertPrice("");
+
+    // Refresh tracked products
+    const trackedListRes = await fetch(`${API_BASE}/api/tracked/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const trackedList = await trackedListRes.json();
+    const productAlerts = trackedList
+      .filter((t) => t.product.id === product.id)
+      .map((t) => ({ id: t.id, threshold: t.threshold, active: t.active }));
+    setAlerts(productAlerts);
+
+  } catch (err) {
+    console.error("Error setting alert:", err);
+    setMessage("❌ Failed to set alert.");
+  } finally {
+    setTimeout(() => setMessage(""), 9999);
+  }
+};
+
 
   const currency = product?.currency || "₹";
 
@@ -256,6 +337,20 @@ export default function ProductDetailPage() {
   if (loading)
     return <div className="text-sm text-gray-500">Loading product…</div>;
   if (error) return <div className="text-red-600">{error}</div>;
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Product Detail</h1>
+        </div>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading products details...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ==============================
   // 🔹 Render Product Details
@@ -362,7 +457,7 @@ export default function ProductDetailPage() {
             </h2>
             {history.length > 0 ? (
               <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                {/* <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={history}
                     margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
@@ -378,7 +473,33 @@ export default function ProductDetailPage() {
                       dot={false}
                     />
                   </LineChart>
-                </ResponsiveContainer>
+                </ResponsiveContainer> */}
+
+                <ResponsiveContainer width="100%" height="100%">
+  <LineChart data={history} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
+    <CartesianGrid strokeDasharray="3 3" />
+    <XAxis
+      dataKey="date"
+      tickFormatter={(d) => new Date(d).toLocaleDateString()}
+      tick={{ fontSize: 12 }}
+    />
+    <YAxis tick={{ fontSize: 12 }} domain={["auto", "auto"]} />
+    <Tooltip
+      formatter={(v) => `${currency}${v}`}
+      labelFormatter={(label) => new Date(label).toLocaleString()}
+    />
+    <Line
+      type="monotone"
+      dataKey="price"
+      strokeWidth={2}
+      dot={false}
+      stroke="#4F46E5"
+    />
+  </LineChart>
+</ResponsiveContainer>
+
+
+
               </div>
             ) : (
               <div className="text-sm text-gray-500">No history yet.</div>

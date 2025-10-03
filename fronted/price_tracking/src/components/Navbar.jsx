@@ -1,5 +1,6 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   // ---------------------------
@@ -7,6 +8,7 @@ export default function Navbar() {
   // ---------------------------
   // Provides user info and logout function
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   console.log("user ==> ", user)
 
   // ---------------------------
@@ -61,6 +63,18 @@ export default function Navbar() {
                 My Tracked
               </NavLink>
 
+              {/* ✅ Admin Link (only if user is admin) */}
+              {/* {localStorage.getItem("is_admin") === "true" && (
+                <NavLink to="/admin/dashboard" className={navLinkClass}>
+                  Admin
+                </NavLink>
+              )} */}
+              {user?.is_admin && (
+                <NavLink to="/admin/dashboard" className={navLinkClass}>
+                  Admin
+                </NavLink>
+              )}
+
               {/* Greeting */}
               <span className="text-sm text-gray-600 ml-2">
                 Hi, {user.username || user.email}
@@ -68,7 +82,10 @@ export default function Navbar() {
 
               {/* Logout Button */}
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  navigate("/login");
+                }}
                 className="ml-3 rounded-xl bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
               >
                 Logout
@@ -80,3 +97,5 @@ export default function Navbar() {
     </nav>
   );
 }
+
+
