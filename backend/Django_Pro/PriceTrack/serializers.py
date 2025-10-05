@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Product, PriceHistory, TrackedProduct
 import re
+
 User = get_user_model()
 
 # ---------------------------
@@ -102,7 +103,6 @@ class SignupSerializer(serializers.ModelSerializer):
 # ---------------------------
 # PRODUCT & PRICE SERIALIZERS
 # ---------------------------
-
 class PriceHistorySerializer(serializers.ModelSerializer):
     """
     Serializes price history for a product.
@@ -114,6 +114,13 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         model = PriceHistory
         fields = ["id", "price", "date", "product", "product_name", "scraped_at"]
 
+class ProductListSerializer(serializers.ModelSerializer):
+    """
+    Simplified product serializer for lists (without price history).
+    """
+    class Meta:
+        model = Product
+        fields = ["id", "title", "current_price", "currency", "image_url", "product_url"]
 
 class ProductSerializer(serializers.ModelSerializer):
     """
@@ -135,29 +142,6 @@ class ProductSerializer(serializers.ModelSerializer):
             "last_checked",
             "history",
         ]
-
-
-class ProductListSerializer(serializers.ModelSerializer):
-    """
-    Simplified product serializer for lists (without price history).
-    """
-    class Meta:
-        model = Product
-        fields = ["id", "title", "current_price", "currency", "image_url", "product_url"]
-
-
-# ---------------------------
-# PRICE ALERT SERIALIZER
-# ---------------------------
-
-# class PriceAlertSerializer(serializers.ModelSerializer):
-#     """
-#     Serializes PriceAlert model.
-#     """
-#     class Meta:
-#         model = PriceAlert
-#         fields = ["id", "product", "threshold", "active"]
-
 
 # ---------------------------
 # TRACKED PRODUCT SERIALIZER
@@ -183,10 +167,6 @@ class TrackedProductSerializer(serializers.ModelSerializer):
         # read_only_fields = ["id", "product", "created_at"]
         read_only_fields = ["id", "product", "created_at", "user"]
 
-    # product_id = serializers.PrimaryKeyRelatedField(
-    #     source="product", queryset=Product.objects.all(), write_only=True
-    # )
-
     def create(self, validated_data):
         """
         Ensure tracked product is linked to the authenticated user.
@@ -197,4 +177,14 @@ class TrackedProductSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
     
 
+# ---------------------------
+# PRICE ALERT SERIALIZER (COMMENTED - OPTIONAL)
+# ---------------------------
 
+# class PriceAlertSerializer(serializers.ModelSerializer):
+#     """
+#     Serializes PriceAlert model.
+#     """
+#     class Meta:
+#         model = PriceAlert
+#         fields = ["id", "product", "threshold", "active"]

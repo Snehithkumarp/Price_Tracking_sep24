@@ -389,6 +389,7 @@ export default function ProductsPage() {
       setDeletingId(id);
       await apiFetch(API.product(id), "DELETE");
       setProducts(products.filter((p) => p.id !== id));
+      alert("Product deleted successfully!");
     } catch (err) {
       console.error("Failed to delete product:", err);
       setError("Failed to delete product. Please try again.");

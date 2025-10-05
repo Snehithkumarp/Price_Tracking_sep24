@@ -12,7 +12,7 @@ export default function AdminLayout() {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-100 p-4">
+      <aside className="w-64 bg-gray-100 p-4 sticky top-0 h-screen">
         <nav className="flex flex-col gap-4">
           <NavLink to="/admin/dashboard" className={navLinkClass}>
             Dashboard
@@ -27,9 +27,9 @@ export default function AdminLayout() {
             Price History
           </NavLink>
           {/* Uncomment when Users page is ready */}
-          {/* <NavLink to="/admin/users" className={navLinkClass}>
+          <NavLink to="/admin/users" className={navLinkClass}>
             Users
-          </NavLink> */}
+          </NavLink>
         </nav>
       </aside>
 

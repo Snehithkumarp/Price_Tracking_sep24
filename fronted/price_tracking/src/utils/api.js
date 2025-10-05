@@ -20,13 +20,16 @@ export const API = {
   adminTrackedProducts: () => `${API_BASE}/api/tracked-products/all/`,
   users: () => `${API_BASE}/api/users/`,
   adminPriceHistory: () => `${API_BASE}/api/price-history/`,
+
+  // Delete endpoint - use the trackedProducts base with ID appended
+  deleteTrackedProduct: (id) => `${API_BASE}/api/tracked-products/${id}/`,
+  
   // ---------- Auth ----------
  // signup: () => `${API_BASE}/api/auth/signup/`, // Register a new user
   signup: () => `${API_BASE}/api/auth/signup/`,
-
   login: () => `${API_BASE}/api/auth/login/`,   // Login user and return JWT token
-
   dashboardStats: () => `${API_BASE}/dashboard/stats/`,
+
   // ---------- Product ----------
   recentlyDropped: () => `${API_BASE}/api/products/recently-dropped/`,
   search: (q) => `${API_BASE}/api/products/?search=${encodeURIComponent(q)}`, 
@@ -37,6 +40,10 @@ export const API = {
 
   priceHistory: (id) => `${API_BASE}/api/products/${id}/history/`, 
   // Get price history of a product by ID
+
+  // ---------- Tracked Products ----------
+  // ✅ ADD THIS - Delete tracked product endpoint
+  deleteTrackedProduct: (id) => `${API_BASE}/api/tracked-products/${id}/`,
 
   // ---------- Price Alerts ----------
   alerts: {
@@ -64,16 +71,24 @@ export async function apiFetch(url, method = "GET", body = null, options = {}) {
     body: body ? JSON.stringify(body) : null,
   });
 
-  if (!response.ok) {
-    let errorText = "API request failed";
-    try {
-      const errorData = await response.json();
-      errorText = errorData.detail || JSON.stringify(errorData);
-    } catch (err) {
-      // fallback to default error text
-    }
-    throw new Error(errorText);
+  // ✅ Handle DELETE or 204 responses gracefully
+  if (response.status === 204) {
+    return null;
   }
 
-  return await response.json();
+  // Try to parse JSON safely
+  let data = null;
+  try {
+    const text = await response.text();
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    let errorText = data?.detail || data?.error || response.statusText;
+    throw new Error(errorText || "API request failed");
+  }
+
+  return data;
 }

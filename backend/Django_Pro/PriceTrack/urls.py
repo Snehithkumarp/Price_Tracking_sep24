@@ -46,8 +46,6 @@ router.register(r'admin-tracked-products', AdminTrackedProductViewSet, basename=
 router.register(r'admin/price-history', AdminPriceHistoryViewSet, basename='admin-price-history')
 router.register(r"admin/tracked", AdminTrackedProductViewSet, basename="admin-tracked")
 
-
-
 # -------------------------------
 # URL Patterns
 # -------------------------------
@@ -70,28 +68,49 @@ urlpatterns = [
     path("auth/jwt/login/", CustomTokenObtainPairView.as_view(), name="jwt-login"),
     path("auth/jwt/refresh/", TokenRefreshView.as_view(), name="jwt-refresh"),
 
-    
-    # ---------- Products ----------
-    # Product-specific views
-    # path("api/products/<int:id>/", ProductDetailView.as_view(), name="product-detail"),  # Single product detail
-    # path("products/<int:id>/history/", PriceHistoryListView.as_view(), name="price-history"), # Price history
-    # path("api/products/search/", ProductSearchView.as_view(), name="product-search"),   # Search products
-    #------- admin --------------
-    # path("api/price-history/", PriceHistoryListView.as_view(), name="price-history"),
+    #------- product-history --------------
     path("api/products/<int:pk>/history/", ProductPriceHistoryView.as_view(), name="product-history"),
     
 
-       # ---------- Delete Records ----------
+    # ---------- Delete Records ----------
     path("api/products/delete-last/", DeleteLastRecordsView.as_view(), name="delete-last-1"),
     path("api/products/delete-last/<int:count>/", DeleteLastRecordsView.as_view(), name="delete-last-n"),
     path("products/recently-dropped/", recently_dropped_products, name="recently-dropped"),
+
+
+    # ---------- Tracked Products (Manual Routes) ----------
+    # Regular user endpoints
+    path("api/tracked-products/", TrackedProductViewSet.as_view({
+        'get': 'list',
+        'post': 'create'
+    }), name='tracked-products-list'),
+    
+    path("api/tracked-products/<int:pk>/", TrackedProductViewSet.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'patch': 'partial_update',
+        'delete': 'destroy'
+    }), name='tracked-products-detail'),
+
+    # Admin endpoints
+    path("api/tracked-products/all/", TrackedProductViewSet.as_view({
+        'get': 'all'
+    }), name='tracked-products-all'),
 
     # ---------- Router URLs ----------
     # Include router URLs for ViewSets
     path("", include(router.urls)),       # Root includes router URLs
     path("api/", include(router.urls)),   # API prefix includes router URLs
     path("api/auth/", include(router.urls)), # Auth prefix (not necessary for router but included)
-    path("dashboard/stats/", dashboard_stats, name="dashboard-stats")
+    
+    # ---------- Dashboard ----------
+    path("dashboard/stats/", dashboard_stats, name="dashboard-stats"),
+
+    # ---------- Products ----------
+    # Product-specific views
+    # path("api/products/<int:id>/", ProductDetailView.as_view(), name="product-detail"),  # Single product detail
+    # path("products/<int:id>/history/", PriceHistoryListView.as_view(), name="price-history"), # Price history
+    # path("api/products/search/", ProductSearchView.as_view(), name="product-search"),   # Search products
     
 
 ]
